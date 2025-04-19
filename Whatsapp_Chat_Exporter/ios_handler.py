@@ -189,17 +189,44 @@ def messages(db, data, media_folder, timezone_offset, filter_date, filter_chat, 
                 message.data = None
         else:
             # real message
-            if content["ZMETADATA"] is not None and content["ZMETADATA"].startswith(b"\x2a\x14"):
-                quoted = content["ZMETADATA"][2:19]
-                message.reply = quoted.decode()
-                cursor2.execute(f"""SELECT ZTEXT
-                                    FROM ZWAMESSAGE
-                                    WHERE ZSTANZAID LIKE '{message.reply}%'""")
-                quoted_content = cursor2.fetchone()
-                if quoted_content and "ZTEXT" in quoted_content:
-                    message.quoted_data = quoted_content["ZTEXT"] 
-                else:
-                    message.quoted_data = None
+            if content["ZMETADATA"] is not None:
+
+                quoted = None
+
+                if content["ZMETADATA"].startswith(b"\x2a\x14"):
+                    delimiter = b"\x32\x1a"
+                    start_index = 2  # skipping the prefix
+                    delimiter_index = content["ZMETADATA"].find(delimiter, start_index)
+
+                    if delimiter_index == -1:
+                        # If no delimiter is found
+                        quoted = content["ZMETADATA"][start_index:start_index + 17]  # fixed length approach matching only first 17 characters
+                    else:
+                        # Return bytes up to the delimiter
+                        quoted = content["ZMETADATA"][start_index:delimiter_index]
+                
+                if content["ZMETADATA"].startswith(b"\x2a\x12"):
+                    delimiter = b"\x9a\x01"
+                    start_index = 2  # skipping the prefix
+                    delimiter_index = content["ZMETADATA"].find(delimiter, start_index)
+
+                    if delimiter_index == -1:
+                        # If no delimiter is found
+                        quoted = content["ZMETADATA"][start_index:start_index + 17]  # fixed length approach matching only first 17 characters
+                    else:
+                        # Return bytes up to the delimiter
+                        quoted = content["ZMETADATA"][start_index:delimiter_index]
+
+                if quoted:
+                    message.reply = quoted.decode()
+                    cursor2.execute(f"""SELECT ZTEXT
+                                        FROM ZWAMESSAGE
+                                        WHERE ZSTANZAID LIKE '{message.reply}%'""")
+                    quoted_content = cursor2.fetchone()
+                    if quoted_content and quoted_content["ZTEXT"] :
+                        message.quoted_data = quoted_content["ZTEXT"] 
+                    else:
+                        message.quoted_data = None
             if content["ZMESSAGETYPE"] == 15: # Sticker
                 message.sticker = True
 
