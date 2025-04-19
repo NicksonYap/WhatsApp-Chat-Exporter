@@ -193,39 +193,52 @@ def messages(db, data, media_folder, timezone_offset, filter_date, filter_chat, 
 
                 quoted = None
 
-                if content["ZMETADATA"].startswith(b"\x2a\x14"):
-                    delimiter = b"\x32\x1a"
+                if content["ZMETADATA"].startswith(b"\x2a\x14") or content["ZMETADATA"].startswith(b"\x2a\x12"):
                     start_index = 2  # skipping the prefix
-                    delimiter_index = content["ZMETADATA"].find(delimiter, start_index)
-
-                    if delimiter_index == -1:
-                        # If no delimiter is found
-                        quoted = content["ZMETADATA"][start_index:start_index + 17]  # fixed length approach matching only first 17 characters
-                    else:
-                        # Return bytes up to the delimiter
-                        quoted = content["ZMETADATA"][start_index:delimiter_index]
+                    delimiter_index_found = [] # initialize as no index found
+                    correct_delimiter_index = None
                 
-                if content["ZMETADATA"].startswith(b"\x2a\x12"):
                     delimiter = b"\x9a\x01"
-                    start_index = 2  # skipping the prefix
                     delimiter_index = content["ZMETADATA"].find(delimiter, start_index)
+                    if delimiter_index != -1: 
+                        delimiter_index_found.append(delimiter_index)
+                
+                    delimiter = b"\x32\x1a"
+                    delimiter_index = content["ZMETADATA"].find(delimiter, start_index)
+                    if delimiter_index != -1: 
+                        delimiter_index_found.append(delimiter_index)
 
-                    if delimiter_index == -1:
+                    if len(delimiter_index_found):
+                        correct_delimiter_index = min(delimiter_index_found)
+
+                    if correct_delimiter_index is None:
                         # If no delimiter is found
+                        print("Warning: Quote Delimiter NOT found for: ", content["ZSTANZAID"], file=sys.stderr)
                         quoted = content["ZMETADATA"][start_index:start_index + 17]  # fixed length approach matching only first 17 characters
                     else:
                         # Return bytes up to the delimiter
-                        quoted = content["ZMETADATA"][start_index:delimiter_index]
+                        # print("Info: Quote Delimiter FOUND for: ", content["ZSTANZAID"], " correct_delimiter_index ", correct_delimiter_index, file=sys.stdout)
+                        quoted = content["ZMETADATA"][start_index:correct_delimiter_index]
 
                 if quoted:
                     message.reply = quoted.decode()
+                    # print("Info: From: ", content["ZSTANZAID"], " quotes to: ", message.reply, file=sys.stdout)
                     cursor2.execute(f"""SELECT ZTEXT
                                         FROM ZWAMESSAGE
-                                        WHERE ZSTANZAID LIKE '{message.reply}%'""") # TODO: Use exact ZSTANZAID instead of "LIKE" query
+                                        WHERE ZSTANZAID LIKE '{message.reply}%'
+                                        -- WHERE ZSTANZAID IS '{message.reply}'
+                                        """) # TODO: Use exact ZSTANZAID instead of "LIKE" query
+                                        # TODO: quoted content could sometime times be the caption of media
                     quoted_content = cursor2.fetchone()
-                    if quoted_content and quoted_content["ZTEXT"] :
-                        message.quoted_data = quoted_content["ZTEXT"] 
+                    if quoted_content:
+                        if quoted_content["ZTEXT"] :
+                            # print("Info: Quoted data FOUND from: ", content["ZSTANZAID"], "quote: ", quoted_content["ZTEXT"], file=sys.stdout)
+                            message.quoted_data = quoted_content["ZTEXT"] 
+                        else:
+                            # print("Info: Quoted data FOUND but empty from: ", content["ZSTANZAID"], "quote: ", quoted_content["ZTEXT"], file=sys.stdout)
+                            message.quoted_data = None
                     else:
+                        print("Warning: Quoted data NOT found from: ", content["ZSTANZAID"], " quotes to: ", message.reply ,file=sys.stderr)
                         message.quoted_data = None
             if content["ZMESSAGETYPE"] == 15: # Sticker
                 message.sticker = True
