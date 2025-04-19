@@ -150,7 +150,7 @@ def messages(db, data, media_folder, timezone_offset, filter_date, filter_chat, 
             from_me=content["ZISFROMME"],
             timestamp=ts,
             time=ts, # TODO: Could be bug
-            key_id=content["ZSTANZAID"][:17],
+            key_id=content["ZSTANZAID"],
             timezone_offset=timezone_offset if timezone_offset else CURRENT_TZ_OFFSET,
             message_type=content["ZMESSAGETYPE"]
         )
