@@ -221,7 +221,7 @@ def messages(db, data, media_folder, timezone_offset, filter_date, filter_chat, 
                     message.reply = quoted.decode()
                     cursor2.execute(f"""SELECT ZTEXT
                                         FROM ZWAMESSAGE
-                                        WHERE ZSTANZAID LIKE '{message.reply}%'""")
+                                        WHERE ZSTANZAID LIKE '{message.reply}%'""") # TODO: Use exact ZSTANZAID instead of "LIKE" query
                     quoted_content = cursor2.fetchone()
                     if quoted_content and quoted_content["ZTEXT"] :
                         message.quoted_data = quoted_content["ZTEXT"] 
