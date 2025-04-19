@@ -312,8 +312,7 @@ def main():
         nargs='?',
         default=None,
         type=str,
-        const="1b432994e958845fffe8e2f190f26d1511534088",
-        help="Path to call database (default: 1b432994e958845fffe8e2f190f26d1511534088) iOS only"
+        help="Path to call database (default: `identifiers.CALL`) for iOS only"
     )
     parser.add_argument(
         "--headline",
@@ -512,7 +511,9 @@ def main():
                 vcard(db, data, args.media, args.filter_date, filter_chat, args.filter_empty)
                 if args.android:
                     android_handler.calls(db, data, args.timezone_offset, filter_chat)
-                elif args.ios and args.call_db_ios is not None:
+                elif args.ios is not None:
+                    if args.call_db_ios is None:
+                        args.call_db_ios = identifiers.CALL
                     with sqlite3.connect(args.call_db_ios) as cdb:
                         cdb.row_factory = sqlite3.Row
                         ios_handler.calls(cdb, data, args.timezone_offset, filter_chat)
