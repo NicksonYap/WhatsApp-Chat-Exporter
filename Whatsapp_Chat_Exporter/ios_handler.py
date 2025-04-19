@@ -427,7 +427,7 @@ def calls(db, data, timezone_offset, filter_chat):
                 WHERE 1=1
                     {get_chat_condition(filter_chat[0], True, ["ZGROUPCALLCREATORUSERJIDSTRING"], None, "ios")}
                     {get_chat_condition(filter_chat[1], False, ["ZGROUPCALLCREATORUSERJIDSTRING"], None, "ios")}""")
-    chat = ChatStore(Device.ANDROID, "WhatsApp Calls")
+    chat = ChatStore(Device.IOS, "WhatsApp Calls")
     content = c.fetchone()
     while content is not None:
         ts = APPLE_TIME + int(content["ZDATE"])
