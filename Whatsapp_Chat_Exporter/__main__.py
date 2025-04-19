@@ -65,7 +65,7 @@ def main():
         "--media",
         dest="media",
         default=None,
-        help="Path to WhatsApp media folder (default: WhatsApp)")
+        help="Path to WhatsApp media folder (default: `WhatsApp` for Android or `identifiers.DOMAIN` for iOS)")
     parser.add_argument(
         "-b",
         "--backup",
